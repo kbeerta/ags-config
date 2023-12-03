@@ -11,6 +11,10 @@ import BrightnessService from './services/brightness.js';
 
 import { exec, execAsync } from 'resource:///com/github/Aylur/ags/utils.js';
 
+function formatPrepending(n) {
+  return n.toLocaleString(undefined, { minimumIntegerDigits: 2 });
+}
+
 const Workspaces = () => Widget.Box({
   className: 'workspaces',
   connections: [[Hyprland.active.workspace, self => {
@@ -27,13 +31,20 @@ const SystemInfo = () => Widget.Box({
   className: 'sysinfo',
   children: [
     Temp(),
-    Separator(),
-    Brightness(),
-    Separator(),
-    Volume(),
-    Separator(),
+    Separator('|'),
+    BrightnessVolumeBattery(),
+    Separator('|'),
     Clock(),
-    Separator(),
+  ],
+});
+
+const BrightnessVolumeBattery = () => Widget.Box({
+  // spacing: 10,
+  children: [
+    Brightness(),
+    Separator('•'),
+    Volume(),
+    Separator('•'),
     Battery(),
   ],
 });
@@ -48,29 +59,21 @@ const Temp = () => Widget.Label({
 
 const Brightness = () => Widget.Box({
   className: 'brightness',
-  spacing: 4,
+  spacing: 5,
   children: [
     Widget.Label(''),
     Widget.Label({
       connections: [
         [50, self => execAsync(['light'])
-          .then(brightness => self.label = `${Math.floor(brightness)}`).catch(console.error)],
+          .then(brightness => self.label = `${formatPrepending(Math.floor(brightness))}%`).catch(console.error)],
       ],
     }),
   ],
 });
 
-// const Brightness = () => Widget.Label({
-//   className: 'brightness',
-//   connections: [
-//     [50, self => execAsync(['light'])
-//       .then(brightness => self.label = `${Math.floor(brightness)}`).catch(console.error)],
-//   ],
-// });
-
 const Volume = () => Widget.Box({
   className: 'volume',
-  spacing: 4,
+  spacing: 5,
   children: [
     Widget.Label({
       connections: [
@@ -82,21 +85,12 @@ const Volume = () => Widget.Box({
     Widget.Label({
       connections: [
         [Audio, self => {
-          self.label = `${Math.floor(Audio.speaker?.volume * 100) || 0 }`;
+          self.label = `${formatPrepending(Math.floor(Audio.speaker?.volume * 100) || 0)}%`;
         }, 'speaker-changed'],
       ],
     }),
   ],
 });
-
-// const Volume = () => Widget.Label({
-//   className: 'volume',
-//   connections: [
-//     [Audio, self => {
-//       self.label = `${!Audio.speaker?.stream.isMuted ? Math.floor(Audio.speaker?.volume * 100) || 0 : 0 }`;
-//     }, 'speaker-changed'],
-//   ],
-// });
 
 const Clock = () => Widget.Label({
   className: 'clock',
@@ -108,7 +102,6 @@ const Clock = () => Widget.Label({
 
 const Battery = () => Widget.Box({
   className: 'battery',
-  spacing: 2,
   children: [
     Widget.Label({
       binds: [
@@ -117,23 +110,15 @@ const Battery = () => Widget.Box({
     }),
     Widget.Label({
       binds: [
-        ['label', BatteryService, 'percent', p => `${p > 0 ? p : 0}%`],
+        ['label', BatteryService, 'percent', p => `${formatPrepending(p > 0 ? p : 0)}%`],
       ],
     }),
   ],
 });
 
-// const Battery = () => Widget.Label({
-//   className: 'battery',
-//   binds: [
-//     ['label', BatteryService, 'percent', p => `${p > 0 ? p : 0}%`],
-//     ['className', BatteryService, 'charching', c => c ? 'charging' : ''],
-//   ]
-// });
-
-const Separator = () => Widget.Label({
+const Separator = (sep) => Widget.Label({
   className: 'separator',
-  label: '|',
+  label: sep,
 });
 
 const Left = Widget.Box({
