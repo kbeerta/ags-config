@@ -34,19 +34,24 @@ window {
   border-bottom: 2px solid @fg1;
 }
 
-.sysinfo label {
+.right label {
   margin: 0.25rem;
 }
 
-.sysinfo {
+.right {
   color: @fg0;
 }
 
-.sysinfo:last-child {
+.right:last-child {
   margin-right: 0.75rem;
 }
 
-.sysinfo label.separator {
+label.separator {
   color: @fg2;
   margin: 0rem 0.75rem;
+}
+
+label.indicator {
+  color: @fg0;
+  margin: 0rem 1rem;
 }

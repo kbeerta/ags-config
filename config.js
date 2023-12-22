@@ -3,13 +3,13 @@ import App from 'resource:///com/github/Aylur/ags/app.js';
 import Widget from 'resource:///com/github/Aylur/ags/widget.js';
 
 import Audio from 'resource:///com/github/Aylur/ags/service/audio.js';
-import BatteryService from 'resource:///com/github/Aylur/ags/service/battery.js';
+import Battery from 'resource:///com/github/Aylur/ags/service/battery.js';
 import Hyprland from 'resource:///com/github/Aylur/ags/service/hyprland.js';
 import Network from 'resource:///com/github/Aylur/ags/service/network.js';
 
 import BrightnessService from './services/brightness.js';
 
-import { exec, execAsync } from 'resource:///com/github/Aylur/ags/utils.js';
+import { exec, execAsync, timeout } from 'resource:///com/github/Aylur/ags/utils.js';
 
 function formatPrepending(n) {
   return n.toLocaleString(undefined, { minimumIntegerDigits: 2 });
@@ -27,33 +27,68 @@ const Workspaces = () => Widget.Box({
   }]],
 });
 
+const InfoRevealer = () => {
+  let open = false;
+
+  const duration = 350;
+
+  const indicator = Indicator('');
+
+  const batteryRevealer = Widget.Revealer({
+    transition: 'slide_right',
+    transition_duration: duration,
+    child: BatteryLabel(),
+  });
+
+  const revealer = Widget.Revealer({
+    transition: 'slide_left',
+    transition_duration: duration,
+    child: SystemInfo(),
+  });
+
+  return Widget.Box({
+    spacing: 5,
+    children: [
+      Widget.EventBox({
+        onPrimaryClick: () => {
+          open = !open;
+          revealer.reveal_child = open;
+          batteryRevealer.reveal_child = open;
+          indicator.label = open ? '' : '';
+        },
+        child: Widget.Box({
+          children: [
+            revealer,
+            indicator,
+          ],
+        }),
+      }),
+      BatteryIcon(),
+      batteryRevealer,
+    ],
+  });
+}
+
 const SystemInfo = () => Widget.Box({
   className: 'sysinfo',
-  children: [
-    Temp(),
-    Separator('|'),
-    BrightnessVolumeBattery(),
-    Separator('|'),
-    Clock(),
-  ],
-});
-
-const BrightnessVolumeBattery = () => Widget.Box({
-  // spacing: 10,
   children: [
     Brightness(),
     Separator('•'),
     Volume(),
-    Separator('•'),
-    Battery(),
   ],
 });
 
-const Temp = () => Widget.Label({
+const Temp = () => Widget.Box({
   className: 'temp',
-  connections: [
-    [1000, self => execAsync(['cat', '/sys/class/thermal/thermal_zone6/temp'])
-      .then(temp => self.label = `${temp / 1000}°C`).catch(console.error)],
+  spacing: 5,
+  children: [
+    Widget.Label(''),
+    Widget.Label({
+      connections: [
+        [1000, self => execAsync(['cat', '/sys/class/thermal/thermal_zone6/temp'])
+          .then(temp => self.label = `${temp / 1000}°C`).catch(console.error)],
+      ],
+    }),
   ],
 });
 
@@ -100,25 +135,37 @@ const Clock = () => Widget.Label({
   ],
 });
 
-const Battery = () => Widget.Box({
-  className: 'battery',
+const BatteryIcon = () => Widget.Label({
+  className: 'batteryIcon',
+  connections: [[Battery, self => {
+    self.label = Battery.percent < 25 ? '󱃍' : Battery.charging ? '󰢟' : '󰂎';
+  }]],
+  // binds: [
+  //   ['label', BatteryService, 'charging', c => c ? '󰢟' : '󰂎'],
+  //   ['className', BatteryService, 'percent', p => p < 25 ? 'alert' : ''],
+  // ],
+});
+
+const BatteryLabel = () => Widget.Box({
+  className: 'batteryLabel',
+  visible: false,
   children: [
     Widget.Label({
       binds: [
-        ['label', BatteryService, 'charching', c => c ? '󰢟' : '󰂎'],
-      ],
-    }),
-    Widget.Label({
-      binds: [
-        ['label', BatteryService, 'percent', p => `${formatPrepending(p > 0 ? p : 0)}%`],
+        ['label', Battery, 'percent', p => `${formatPrepending(p > 0 ? p : 0)}%`],
       ],
     }),
   ],
 });
 
-const Separator = (sep) => Widget.Label({
+const Separator = (separator) => Widget.Label({
   className: 'separator',
-  label: sep,
+  label: separator,
+});
+
+const Indicator = (indicator) => Widget.Label({
+  className: 'indicator',
+  label: indicator,
 });
 
 const Left = Widget.Box({
@@ -133,8 +180,11 @@ const Center = Widget.Box({
 
 const Right = Widget.Box({
   hpack: 'end',
+  className: 'right',
   children: [
-    SystemInfo(),
+    InfoRevealer(),
+    Separator('|'),
+    Clock(),
   ],
 });
 
