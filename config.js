@@ -138,7 +138,7 @@ const Clock = () => Widget.Label({
 const BatteryIcon = () => Widget.Label({
   className: 'batteryIcon',
   connections: [[Battery, self => {
-    self.label = Battery.percent < 25 ? '󱃍' : Battery.charging ? '󰢟' : '󰂎';
+    self.label = Battery.charging ? '󰢟' : Battery.percent < 25 ? '󱃍' : '󰂎';
   }]],
   // binds: [
   //   ['label', BatteryService, 'charging', c => c ? '󰢟' : '󰂎'],
